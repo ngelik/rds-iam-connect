@@ -1,8 +1,9 @@
 aws:
-  tagName: "Environment"
-  tagValue: "Production"
+  tagName: "ResourceOwner"
+  tagValue: "AMP_Portal"
 
 allowedIAMUsers:
-  - "user1"
-  - "user2"
-  - "user3"
+  - "dfir_qa_read_only"
+  - "dfir_qa_full"
+  - "smbe_qa_full"
+  - "smbe_qa_read_only"
