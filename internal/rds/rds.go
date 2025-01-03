@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
-	"github.com/aws/aws-sdk-go-v2/service/rds/types"
 )
 
 // Cluster represents an RDS database cluster with its connection details
@@ -17,24 +16,27 @@ type Cluster struct {
 	Port       int32  // The port number the cluster is listening on
 }
 
-// GetFilteredRDSClusters retrieves RDS clusters filtered by tag name and value
-func GetFilteredRDSClusters(ctx context.Context, cfg aws.Config, tagName, tagValue string) ([]Cluster, error) {
+// DatabaseService represents the RDS service
+type DatabaseService struct {
+	client *rds.Client
+}
+
+// NewService creates a new instance of DatabaseService
+func NewService(cfg aws.Config) *DatabaseService {
+	return &DatabaseService{
+		client: rds.NewFromConfig(cfg),
+	}
+}
+
+// GetClusters retrieves RDS clusters filtered by tag name and value
+func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue string) ([]Cluster, error) {
 	if tagName == "" || tagValue == "" {
 		return nil, fmt.Errorf("tagName and tagValue cannot be empty")
 	}
 
-	client := rds.NewFromConfig(cfg)
-	input := &rds.DescribeDBClustersInput{
-		Filters: []types.Filter{
-			{
-				Name:   aws.String("tag:" + tagName),
-				Values: []string{tagValue},
-			},
-		},
-	}
-
+	input := &rds.DescribeDBClustersInput{}
 	clusters := make([]Cluster, 0)
-	paginator := rds.NewDescribeDBClustersPaginator(client, input)
+	paginator := rds.NewDescribeDBClustersPaginator(svc.client, input)
 
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -51,11 +53,31 @@ func GetFilteredRDSClusters(ctx context.Context, cfg aws.Config, tagName, tagVal
 				continue // Skip clusters with missing required fields
 			}
 
-			clusters = append(clusters, Cluster{
-				Identifier: *dbCluster.DBClusterIdentifier,
-				Endpoint:   *dbCluster.Endpoint,
-				Port:       *dbCluster.Port,
-			})
+			// Retrieve tags for the cluster
+			tagsInput := &rds.ListTagsForResourceInput{
+				ResourceName: dbCluster.DBClusterArn,
+			}
+			tagsOutput, err := svc.client.ListTagsForResource(ctx, tagsInput)
+			if err != nil {
+				return nil, fmt.Errorf("listing tags for resource: %w", err)
+			}
+
+			// Check if the cluster has the specified tag
+			hasTag := false
+			for _, tag := range tagsOutput.TagList {
+				if *tag.Key == tagName && *tag.Value == tagValue {
+					hasTag = true
+					break
+				}
+			}
+
+			if hasTag {
+				clusters = append(clusters, Cluster{
+					Identifier: *dbCluster.DBClusterIdentifier,
+					Endpoint:   *dbCluster.Endpoint,
+					Port:       *dbCluster.Port,
+				})
+			}
 		}
 	}
 
@@ -68,32 +90,16 @@ func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string) (string, er
 		return "", fmt.Errorf("user cannot be empty")
 	}
 
+	fmt.Printf("Generating auth token with the following parameters:\n")
+	fmt.Printf("Endpoint: %s:%d", cluster.Endpoint, cluster.Port)
+	fmt.Printf("Port: %d\n", cluster.Port)
+	fmt.Printf("User: %s\n", user)
+
 	return auth.BuildAuthToken(
 		context.Background(),
-		cluster.Endpoint,
+		fmt.Sprintf("%s:%d", cluster.Endpoint, cluster.Port),
 		cfg.Region,
 		user,
 		cfg.Credentials,
 	)
-}
-
-type DatabaseService interface {
-	GetClusters(ctx context.Context, tagName, tagValue string) ([]Cluster, error)
-	GenerateToken(cluster Cluster, user string) (string, error)
-}
-
-type Service struct {
-	cfg aws.Config
-}
-
-func NewService(cfg aws.Config) DatabaseService {
-	return &Service{cfg: cfg}
-}
-
-func (s *Service) GetClusters(ctx context.Context, tagName, tagValue string) ([]Cluster, error) {
-	return GetFilteredRDSClusters(ctx, s.cfg, tagName, tagValue)
-}
-
-func (s *Service) GenerateToken(cluster Cluster, user string) (string, error) {
-	return GenerateAuthToken(s.cfg, cluster, user)
 }

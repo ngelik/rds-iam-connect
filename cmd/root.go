@@ -17,7 +17,7 @@ import (
 
 var (
 	configPath string
-	rdsService rds.DatabaseService
+	rdsService *rds.DatabaseService
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -109,6 +109,7 @@ func promptUserSelections(clusters []rds.Cluster, allowedUsers []string) (rds.Cl
 
 // connectToRDS establishes a connection to the RDS instance using the mysql client
 func connectToRDS(cluster rds.Cluster, user, token string) error {
+	fmt.Printf("Generated IAM Auth Token: %s\n", token) // Debug statement for token
 	cmd := exec.Command("mysql",
 		"-h", cluster.Endpoint,
 		"-P", fmt.Sprintf("%d", cluster.Port),
