@@ -1,6 +1,3 @@
-
-## Security
-
 This tool uses AWS IAM authentication and does not store any credentials. All authentication tokens are temporary and generated on-demand.
 
 ### Best Practices
