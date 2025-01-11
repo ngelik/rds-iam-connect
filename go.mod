@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.28.7
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.5.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.93.2
+	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 )

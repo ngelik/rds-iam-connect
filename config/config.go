@@ -7,11 +7,14 @@ import (
 )
 
 type Config struct {
-	AWS struct {
+	RdsTags struct {
 		TagName  string
 		TagValue string
 	}
 	AllowedIAMUsers []string
+	EnvTag          map[string]struct {
+		ReleaseState string
+	}
 }
 
 func LoadConfig(configPath string) (*Config, error) {

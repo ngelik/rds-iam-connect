@@ -11,7 +11,9 @@ import (
 	"rds-iam-connect/internal/aws"
 	"rds-iam-connect/internal/rds"
 
-	"github.com/AlecAivazis/survey/v2"
+	"log"
+
+	"github.com/eiannone/keyboard"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +47,15 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("loading config: %w", err)
 	}
 
+	// Add environment selection
+	releaseState, err := promptEnvironmentSelection(cfg.EnvTag)
+	if err == ErrUserCanceled {
+		fmt.Println("\nOperation canceled by user")
+		return nil
+	} else if err != nil {
+		return err
+	}
+
 	// Initialize AWS session
 	awsCfg, err := aws.CheckAWSCredentials()
 	if err != nil {
@@ -52,7 +63,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	rdsService = rds.NewService(*awsCfg.Config)
-	clusters, err := rdsService.GetClusters(ctx, cfg.AWS.TagName, cfg.AWS.TagValue)
+	clusters, err := rdsService.GetClusters(ctx, cfg.RdsTags.TagName, cfg.RdsTags.TagValue, "ReleaseState", releaseState)
 	if err != nil {
 		return err
 	}
@@ -62,12 +73,15 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	cluster, user, err := promptUserSelections(clusters, cfg.AllowedIAMUsers)
-	if err != nil {
+	if err == ErrUserCanceled {
+		fmt.Println("\nOperation canceled by user")
+		return nil
+	} else if err != nil {
 		return err
 	}
 
 	// Generate IAM Auth Token
-	token, err := rds.GenerateAuthToken(*awsCfg.Config, cluster, user)
+	token, err := rds.GenerateAuthToken(*awsCfg.Config, cluster, user, log.Default())
 	if err != nil {
 		return fmt.Errorf("generating IAM auth token: %w", err)
 	}
@@ -76,35 +90,57 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 // promptUserSelections handles user interaction to select cluster and IAM user
-func promptUserSelections(clusters []rds.Cluster, allowedUsers []string) (rds.Cluster, string, error) {
-	clusterNames := make([]string, 0, len(clusters))
-	clusterMap := make(map[string]rds.Cluster, len(clusters))
-
-	for _, cluster := range clusters {
-		display := fmt.Sprintf("%s (%s:%d)", cluster.Identifier, cluster.Endpoint, cluster.Port)
-		clusterNames = append(clusterNames, display)
-		clusterMap[display] = cluster
+func promptUserSelections(clusters []rds.Cluster, users []string) (rds.Cluster, string, error) {
+	if err := keyboard.Open(); err != nil {
+		return rds.Cluster{}, "", fmt.Errorf("failed to open keyboard: %w", err)
 	}
+	defer keyboard.Close()
 
-	var selectedCluster string
-	if err := survey.AskOne(&survey.Select{
-		Message:  "Choose an RDS cluster:",
-		Options:  clusterNames,
-		PageSize: 10,
-	}, &selectedCluster); err != nil {
-		return rds.Cluster{}, "", fmt.Errorf("cluster selection failed: %w", err)
+	// First, select cluster
+	for {
+		fmt.Println("\nSelect RDS cluster:")
+		for i, cluster := range clusters {
+			fmt.Printf("%d) %s\n", i+1, cluster.Identifier)
+		}
+		fmt.Println("\nPress Backspace to return to previous menu")
+
+		char, key, err := keyboard.GetSingleKey()
+		if err != nil {
+			return rds.Cluster{}, "", err
+		}
+
+		if key == keyboard.KeyBackspace || key == keyboard.KeyDelete || key == keyboard.KeyEsc {
+			return rds.Cluster{}, "", ErrUserCanceled
+		}
+
+		num := int(char - '0')
+		if num > 0 && num <= len(clusters) {
+			selectedCluster := clusters[num-1]
+
+			// Then select user
+			for {
+				fmt.Println("\nSelect user:")
+				for i, user := range users {
+					fmt.Printf("%d) %s\n", i+1, user)
+				}
+				fmt.Println("\nPress Backspace to return to cluster selection")
+
+				char, key, err := keyboard.GetSingleKey()
+				if err != nil {
+					return rds.Cluster{}, "", err
+				}
+
+				if key == keyboard.KeyBackspace || key == keyboard.KeyDelete || key == keyboard.KeyEsc {
+					break // Return to cluster selection
+				}
+
+				num := int(char - '0')
+				if num > 0 && num <= len(users) {
+					return selectedCluster, users[num-1], nil
+				}
+			}
+		}
 	}
-
-	var selectedUser string
-	if err := survey.AskOne(&survey.Select{
-		Message:  "Choose an IAM user:",
-		Options:  allowedUsers,
-		PageSize: 10,
-	}, &selectedUser); err != nil {
-		return rds.Cluster{}, "", fmt.Errorf("user selection failed: %w", err)
-	}
-
-	return clusterMap[selectedCluster], selectedUser, nil
 }
 
 // connectToRDS establishes a connection to the RDS instance using the mysql client
@@ -140,3 +176,37 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config.yaml", "path to config file")
 }
+
+func promptEnvironmentSelection(envTags []string) (string, error) {
+	if err := keyboard.Open(); err != nil {
+		return "", fmt.Errorf("failed to open keyboard: %w", err)
+	}
+	defer keyboard.Close()
+
+	for {
+		fmt.Println("\nSelect environment:")
+		for i, env := range envTags {
+			fmt.Printf("%d) %s\n", i+1, env)
+		}
+		fmt.Println("\nPress Backspace to return to previous menu")
+
+		char, key, err := keyboard.GetSingleKey()
+		if err != nil {
+			return "", err
+		}
+
+		// Check for backspace/delete to return
+		if key == keyboard.KeyBackspace || key == keyboard.KeyDelete || key == keyboard.KeyEsc {
+			return "", ErrUserCanceled // Define this error type in your package
+		}
+
+		// Convert char to number and validate
+		num := int(char - '0')
+		if num > 0 && num <= len(envTags) {
+			return envTags[num-1], nil
+		}
+	}
+}
+
+// Add this error type at the package level
+var ErrUserCanceled = fmt.Errorf("user canceled operation")

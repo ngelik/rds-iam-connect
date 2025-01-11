@@ -3,6 +3,7 @@ package rds
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
@@ -28,10 +29,10 @@ func NewService(cfg aws.Config) *DatabaseService {
 	}
 }
 
-// GetClusters retrieves RDS clusters filtered by tag name and value
-func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue string) ([]Cluster, error) {
-	if tagName == "" || tagValue == "" {
-		return nil, fmt.Errorf("tagName and tagValue cannot be empty")
+// GetClusters retrieves RDS clusters filtered by tags
+func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue, envTagName, envTagValue string) ([]Cluster, error) {
+	if tagName == "" || tagValue == "" || envTagName == "" || envTagValue == "" {
+		return nil, fmt.Errorf("tag parameters cannot be empty")
 	}
 
 	input := &rds.DescribeDBClustersInput{}
@@ -62,16 +63,19 @@ func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue s
 				return nil, fmt.Errorf("listing tags for resource: %w", err)
 			}
 
-			// Check if the cluster has the specified tag
-			hasTag := false
+			// Check if the cluster has both specified tags
+			hasTagName := false
+			hasEnvTag := false
 			for _, tag := range tagsOutput.TagList {
 				if *tag.Key == tagName && *tag.Value == tagValue {
-					hasTag = true
-					break
+					hasTagName = true
+				}
+				if *tag.Key == envTagName && *tag.Value == envTagValue {
+					hasEnvTag = true
 				}
 			}
 
-			if hasTag {
+			if hasTagName && hasEnvTag {
 				clusters = append(clusters, Cluster{
 					Identifier: *dbCluster.DBClusterIdentifier,
 					Endpoint:   *dbCluster.Endpoint,
@@ -85,15 +89,13 @@ func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue s
 }
 
 // GenerateAuthToken generates an authentication token for connecting to an RDS cluster
-func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string) (string, error) {
+func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string, logger *log.Logger) (string, error) {
 	if user == "" {
 		return "", fmt.Errorf("user cannot be empty")
 	}
 
-	fmt.Printf("Generating auth token with the following parameters:\n")
-	fmt.Printf("Endpoint: %s:%d", cluster.Endpoint, cluster.Port)
-	fmt.Printf("Port: %d\n", cluster.Port)
-	fmt.Printf("User: %s\n", user)
+	logger.Printf("generating auth token for endpoint: %s:%d, user: %s",
+		cluster.Endpoint, cluster.Port, user)
 
 	return auth.BuildAuthToken(
 		context.Background(),
