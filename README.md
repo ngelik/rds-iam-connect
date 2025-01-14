@@ -8,6 +8,7 @@
 - **Multi-Cluster Support:** Allows users to select from multiple RDS clusters filtered by tag.
 - **Interactive CLI:** Provides an interactive command-line interface for user selections.
 - **Configuration Management:** Uses a YAML configuration file for flexible settings.
+- **Caching:** Caches the list of RDS clusters to avoid unnecessary API calls.
 - **Cross-Platform:** Built with Go and compatible with major operating systems.
 
 ## Prerequisites
