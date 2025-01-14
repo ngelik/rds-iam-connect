@@ -59,7 +59,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("checking AWS credentials: %w", err)
 	}
 
-	rdsService = rds.NewService(*awsCfg.Config)
+	rdsService = rds.NewService(*awsCfg.Config, cfg.Caching.Enabled, cfg.Caching.Duration)
 	clusters, err := rdsService.GetClusters(ctx, cfg.RdsTags.TagName, cfg.RdsTags.TagValue, "ReleaseState", releaseState)
 	if err != nil {
 		return err

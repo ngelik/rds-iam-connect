@@ -19,18 +19,35 @@ type Cluster struct {
 
 // DatabaseService represents the RDS service
 type DatabaseService struct {
-	client *rds.Client
+	client      *rds.Client
+	cacheConfig struct {
+		Enabled  bool
+		Duration string
+	}
 }
 
 // NewService creates a new instance of DatabaseService
-func NewService(cfg aws.Config) *DatabaseService {
+func NewService(cfg aws.Config, cacheEnabled bool, cacheDuration string) *DatabaseService {
 	return &DatabaseService{
 		client: rds.NewFromConfig(cfg),
+		cacheConfig: struct {
+			Enabled  bool
+			Duration string
+		}{
+			Enabled:  cacheEnabled,
+			Duration: cacheDuration,
+		},
 	}
 }
 
 // GetClusters retrieves RDS clusters filtered by tags
 func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue, envTagName, envTagValue string) ([]Cluster, error) {
+	// Try to load from cache first
+	if clusters, ok := svc.loadFromCache(); ok {
+		return clusters, nil
+	}
+
+	// Original cluster fetching logic
 	if tagName == "" || tagValue == "" || envTagName == "" || envTagValue == "" {
 		return nil, fmt.Errorf("tag parameters cannot be empty")
 	}
@@ -83,6 +100,12 @@ func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue, 
 				})
 			}
 		}
+	}
+
+	// Save to cache before returning
+	if err := svc.saveToCache(clusters); err != nil {
+		// Log the error but don't fail the operation
+		fmt.Printf("Failed to save clusters to cache: %v\n", err)
 	}
 
 	return clusters, nil

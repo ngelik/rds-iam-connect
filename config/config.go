@@ -15,6 +15,10 @@ type Config struct {
 	EnvTag          map[string]struct {
 		ReleaseState string
 	}
+	Caching struct {
+		Enabled  bool
+		Duration string
+	}
 }
 
 func LoadConfig(configPath string) (*Config, error) {

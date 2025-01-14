@@ -12,3 +12,7 @@ envTag:
     environment: "qa"
   nam:
     environment: "prd"
+
+caching:
+  enabled: true
+  duration: 1d
