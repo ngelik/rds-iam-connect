@@ -1,4 +1,4 @@
-aws:
+rdsTags:
   tagName: "Environment"
   tagValue: "Production"
 
@@ -6,3 +6,9 @@ allowedIAMUsers:
   - "user1"
   - "user2"
   - "user3"
+
+envTag:
+  qa1:
+    environment: "qa"
+  nam:
+    environment: "prd"
