@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 
 	"rds-iam-connect/config"
 	"rds-iam-connect/internal/aws"
@@ -59,6 +60,13 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("checking AWS credentials: %w", err)
 	}
 
+	// Get current IAM role
+	iamRole, err := awsCfg.GetCurrentIAMRole(ctx)
+	if err != nil {
+		fmt.Printf("Warning: Could not get IAM role: %v\n", err)
+		iamRole = "unknown"
+	}
+
 	rdsService = rds.NewService(*awsCfg.Config, cfg.Caching.Enabled, cfg.Caching.Duration)
 	clusters, err := rdsService.GetClusters(ctx, cfg.RdsTags.TagName, cfg.RdsTags.TagValue, "ReleaseState", releaseState)
 	if err != nil {
@@ -73,6 +81,16 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// Extract account ID from IAM role ARN
+	accountID := ""
+	if parts := strings.Split(iamRole, ":"); len(parts) >= 5 {
+		accountID = parts[4]
+	}
+
+	fmt.Printf("\nDebug Information:\n")
+	fmt.Printf("IAM Role: %s\n", iamRole)
+	fmt.Printf("RDS DB User ARN: %s\n\n", cluster.GetDBUserArn(accountID))
 
 	// Generate IAM Auth Token
 	token, err := rds.GenerateAuthToken(*awsCfg.Config, cluster, user, log.Default())

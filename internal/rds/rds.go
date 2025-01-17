@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
@@ -15,6 +16,8 @@ type Cluster struct {
 	Identifier string // The unique identifier of the RDS cluster
 	Endpoint   string // The endpoint URL to connect to the cluster
 	Port       int32  // The port number the cluster is listening on
+	Arn        string // Add this field
+	Region     string // Add region field
 }
 
 // DatabaseService represents the RDS service
@@ -93,10 +96,18 @@ func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue, 
 			}
 
 			if hasTagName && hasEnvTag {
+				// Extract region from the ARN
+				region := ""
+				if arnParts := strings.Split(*dbCluster.DBClusterArn, ":"); len(arnParts) >= 4 {
+					region = arnParts[3]
+				}
+
 				clusters = append(clusters, Cluster{
 					Identifier: *dbCluster.DBClusterIdentifier,
 					Endpoint:   *dbCluster.Endpoint,
 					Port:       *dbCluster.Port,
+					Arn:        *dbCluster.DBClusterArn,
+					Region:     region,
 				})
 			}
 		}
@@ -126,5 +137,20 @@ func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string, logger *log
 		cfg.Region,
 		user,
 		cfg.Credentials,
+	)
+}
+
+// GetDBUserArn generates the DB user ARN format
+func (c *Cluster) GetDBUserArn(accountID string) string {
+	// Extract cluster ID from the identifier
+	clusterID := c.Identifier
+	if strings.Contains(clusterID, "-cluster") {
+		clusterID = strings.TrimSuffix(clusterID, "-cluster")
+	}
+
+	return fmt.Sprintf("arn:aws:rds-db:%s:%s:dbuser:%s",
+		c.Region,
+		accountID,
+		clusterID,
 	)
 }
