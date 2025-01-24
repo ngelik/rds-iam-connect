@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"strings"
 
 	"rds-iam-connect/config"
 	"rds-iam-connect/internal/aws"
@@ -82,20 +81,21 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Extract account ID from IAM role ARN
-	accountID := ""
-	if parts := strings.Split(iamRole, ":"); len(parts) >= 5 {
-		accountID = parts[4]
+	// Only perform IAM check if enabled in config
+	if cfg.CheckIAMPermissions {
+		if err := awsCfg.CheckIAMUserAccess(ctx, iamRole, rdsService.GetRDSInstanceIdentifier(cluster), user); err != nil {
+			if err.Error() != "IAM access check: allowed" {
+				return fmt.Errorf("access denied: your IAM role '%s' does not have permission to connect to RDS instance as user '%s': %w",
+					iamRole, user, err)
+			}
+		}
 	}
-
-	fmt.Printf("\nDebug Information:\n")
-	fmt.Printf("IAM Role: %s\n", iamRole)
-	fmt.Printf("RDS DB User ARN: %s\n\n", cluster.GetDBUserArn(accountID))
 
 	// Generate IAM Auth Token
 	token, err := rds.GenerateAuthToken(*awsCfg.Config, cluster, user, log.Default())
 	if err != nil {
-		return fmt.Errorf("generating IAM auth token: %w", err)
+		fmt.Printf("Error generating IAM auth token: %v\n", err)
+		return err
 	}
 
 	return connectToRDS(cluster, user, token)

@@ -19,6 +19,7 @@ type Config struct {
 		Enabled  bool
 		Duration string
 	}
+	CheckIAMPermissions bool
 }
 
 func LoadConfig(configPath string) (*Config, error) {

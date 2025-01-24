@@ -8,11 +8,13 @@ allowedIAMUsers:
   - "user3"
 
 envTag:
-  qa1:
+  Test:
     environment: "qa"
-  nam:
-    environment: "prd"
+  Stage:
+    environment: "staging"
 
 caching:
   enabled: true
   duration: 1d
+
+checkIAMPermissions: true

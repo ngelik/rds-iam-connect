@@ -140,17 +140,16 @@ func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string, logger *log
 	)
 }
 
-// GetDBUserArn generates the DB user ARN format
-func (c *Cluster) GetDBUserArn(accountID string) string {
-	// Extract cluster ID from the identifier
-	clusterID := c.Identifier
-	if strings.Contains(clusterID, "-cluster") {
-		clusterID = strings.TrimSuffix(clusterID, "-cluster")
+// GetRDSInstanceIdentifier gets the RDS instance identifier
+func (svc *DatabaseService) GetRDSInstanceIdentifier(cluster Cluster) string {
+	input := &rds.DescribeDBClustersInput{
+		DBClusterIdentifier: aws.String(cluster.Identifier),
 	}
 
-	return fmt.Sprintf("arn:aws:rds-db:%s:%s:dbuser:%s",
-		c.Region,
-		accountID,
-		clusterID,
-	)
+	output, err := svc.client.DescribeDBClusters(context.Background(), input)
+	if err != nil {
+		return ""
+	}
+
+	return *output.DBClusters[0].DbClusterResourceId
 }
