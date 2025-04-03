@@ -38,25 +38,28 @@
 }
 ```
 
-## Project Structure
+## Installation
 
-```plaintext
-.github/workflows/     # CI/CD workflows
-bin/                  # Compiled binaries (gitignored)
-cmd/                  # Main CLI commands
-config/               # Configuration management
-internal/             # Core services and utilities
-  aws/                # AWS SDK interactions
-  cli/                # CLI interaction logic
-  rds/                # RDS interaction and token generation
-  utils/              # Utility functions
-main.go               # Entry point
-build.sh              # Multi-platform build script
-README.md             # Project documentation
-go.mod, go.sum        # Go module dependencies
-```
+### Using Homebrew (Recommended)
 
-## Setup Instructions
+1. **Add the tap repository:**
+   ```bash
+   brew tap ngelik/tap
+   ```
+
+2. **Install rds-iam-connect:**
+   ```bash
+   brew install rds-iam-connect
+   ```
+
+3. **Update to the latest version:**
+   ```bash
+   brew upgrade rds-iam-connect
+   ```
+
+### Manual Installation
+
+If you prefer to install manually, follow these steps:
 
 1. **Clone the Repository:**
    ```bash
