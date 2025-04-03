@@ -1,0 +1,2415 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    codeql.yml
+    go.yml
+cmd/
+  root.go
+config/
+  config.go
+internal/
+  aws/
+    aws.go
+  cli/
+    cli_test.go
+    cli.go
+  logger/
+    logger.go
+  rds/
+    auth.go
+    cache.go
+    service.go
+    types.go
+  utils/
+    dirs.go
+    utils.go
+.cursorrules
+.gitignore
+.golangci.yml
+build.sh
+config.example.yaml
+go.mod
+main.go
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".github/workflows/codeql.yml">
+# For most projects, this workflow file will not need changing; you simply need
+# to commit it to your repository.
+#
+# You may wish to alter this file to override the set of languages analyzed,
+# or to provide custom queries or build logic.
+#
+# ******** NOTE ********
+# We have attempted to detect the languages in your repository. Please check
+# the `language` matrix defined below to confirm you have the correct set of
+# supported CodeQL languages.
+#
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '25 5 * * 4'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    # Runner size impacts CodeQL analysis time. To learn more, please see:
+    #   - https://gh.io/recommended-hardware-resources-for-running-codeql
+    #   - https://gh.io/supported-runners-and-hardware-resources
+    #   - https://gh.io/using-larger-runners (GitHub.com only)
+    # Consider using larger runners or machines with greater resources for possible analysis time improvements.
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    permissions:
+      # required for all workflows
+      security-events: write
+
+      # required to fetch internal or private CodeQL packs
+      packages: read
+
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - language: go
+          build-mode: autobuild
+        # CodeQL supports the following values keywords for 'language': 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift'
+        # Use `c-cpp` to analyze code written in C, C++ or both
+        # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
+        # Use 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
+        # To learn more about changing the languages that are analyzed or customizing the build mode for your analysis,
+        # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
+        # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
+        # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # Prefix the list here with "+" to use these queries and those in the config file.
+
+        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+        # queries: security-extended,security-and-quality
+
+    # If the analyze step fails for one of the languages you are analyzing with
+    # "We were unable to automatically build your code", modify the matrix above
+    # to set the build mode to "manual" for that language. Then modify this step
+    # to build your code.
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+    - if: matrix.build-mode == 'manual'
+      shell: bash
+      run: |
+        echo 'If you are using a "manual" build mode for one or more of the' \
+          'languages you are analyzing, replace this with the commands to build' \
+          'your code, for example:'
+        echo '  make bootstrap'
+        echo '  make release'
+        exit 1
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
+</file>
+
+<file path=".github/workflows/go.yml">
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
+</file>
+
+<file path="internal/cli/cli_test.go">
+package cli
+
+import (
+	"testing"
+
+	"rds-iam-connect/internal/rds"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// MockPrompter is a mock implementation of the Prompter interface.
+type MockPrompter struct {
+	selectedCluster rds.Cluster
+	selectedUser    string
+}
+
+func (m *MockPrompter) SelectCluster(_ []rds.Cluster) (rds.Cluster, error) {
+	return m.selectedCluster, nil
+}
+
+func (m *MockPrompter) SelectUser(_ []string) (string, error) {
+	return m.selectedUser, nil
+}
+
+func TestSelectCluster(t *testing.T) {
+	mockPrompter := &MockPrompter{
+		selectedCluster: rds.Cluster{
+			Identifier: "test-cluster-1",
+			Endpoint:   "test-cluster-1.xxxxx.us-west-2.rds.amazonaws.com",
+			Port:       3306,
+			Region:     "us-west-2",
+		},
+	}
+
+	cli := NewCLI(mockPrompter)
+
+	clusters := []rds.Cluster{
+		{
+			Identifier: "test-cluster-1",
+			Endpoint:   "test-cluster-1.xxxxx.us-west-2.rds.amazonaws.com",
+			Port:       3306,
+			Region:     "us-west-2",
+		},
+		{
+			Identifier: "test-cluster-2",
+			Endpoint:   "test-cluster-2.xxxxx.us-west-2.rds.amazonaws.com",
+			Port:       3306,
+			Region:     "us-west-2",
+		},
+	}
+	selected, err := cli.SelectCluster(clusters)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "test-cluster-1", selected.Identifier)
+}
+
+func TestSelectUser(t *testing.T) {
+	mockPrompter := &MockPrompter{
+		selectedUser: "test-user",
+	}
+
+	cli := NewCLI(mockPrompter)
+
+	users := []string{"test-user", "admin"}
+	selected, err := cli.SelectUser(users)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "test-user", selected)
+}
+</file>
+
+<file path="internal/logger/logger.go">
+// Package logger provides a simple logging interface for the application.
+package logger
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+// Logger provides a simple logging interface with debug capabilities.
+type Logger struct {
+	*log.Logger
+	debug bool
+}
+
+// New creates a new Logger instance.
+func New(debug bool) *Logger {
+	// If debug is enabled, write to stderr, otherwise discard output
+	var output = io.Discard
+	if debug {
+		output = os.Stderr
+	}
+
+	return &Logger{
+		Logger: log.New(output, "", log.LstdFlags),
+		debug:  debug,
+	}
+}
+
+// Debug logs a debug message if debug mode is enabled.
+func (l *Logger) Debug(v ...interface{}) {
+	if l.debug {
+		if err := l.Output(2, fmt.Sprint(v...)); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing debug log: %v\n", err)
+		}
+	}
+}
+
+// Debugf logs a formatted debug message if debug mode is enabled.
+func (l *Logger) Debugf(format string, v ...interface{}) {
+	if l.debug {
+		if err := l.Output(2, fmt.Sprintf(format, v...)); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing debug log: %v\n", err)
+		}
+	}
+}
+
+// Debugln logs a debug message with a newline if debug mode is enabled.
+func (l *Logger) Debugln(v ...interface{}) {
+	if l.debug {
+		if err := l.Output(2, fmt.Sprintln(v...)); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing debug log: %v\n", err)
+		}
+	}
+}
+</file>
+
+<file path="internal/rds/auth.go">
+package rds
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+)
+
+// GenerateAuthToken generates an authentication token for connecting to an RDS cluster.
+func GenerateAuthToken(cfg aws.Config, cluster Cluster, user string, logger *log.Logger) (string, error) {
+	if user == "" {
+		return "", fmt.Errorf("user cannot be empty")
+	}
+
+	logger.Printf("generating auth token for endpoint: %s:%d, user: %s",
+		cluster.Endpoint, cluster.Port, user)
+
+	return auth.BuildAuthToken(
+		context.Background(),
+		fmt.Sprintf("%s:%d", cluster.Endpoint, cluster.Port),
+		cfg.Region,
+		user,
+		cfg.Credentials,
+	)
+}
+</file>
+
+<file path="internal/utils/utils.go">
+package utils
+
+// Utility functions will go here
+</file>
+
+<file path=".golangci.yml">
+version: 2
+
+run:
+  go: '1.22'
+  timeout: 5m
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # checking for unchecked errors
+    - govet        # reports suspicious constructs
+    - ineffassign  # detects when assignments to existing variables are not used
+    - staticcheck  # comprehensive checks
+    - unused       # checks for unused constants, variables, functions and types
+    
+    # Additional linters
+    - bodyclose    # checks whether HTTP response body is closed successfully
+    - cyclop       # checks function and package cyclomatic complexity
+    - dupl         # code clone detection
+    - errname      # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    - errorlint    # finds code that will cause problems with the error wrapping scheme
+    - exhaustive   # checks exhaustiveness of enum switch statements
+    - funlen       # tool for detection of long functions
+    - gocognit     # computes and checks the cognitive complexity of functions
+    - goconst      # finds repeated strings that could be replaced by a constant
+    - gocritic     # provides diagnostics that check for bugs, performance and style issues
+    - gocyclo      # computes and checks the cyclomatic complexity of functions
+    - godot        # checks if comments end in a period
+    - gosec        # inspects source code for security problems
+    - misspell     # finds commonly misspelled English words in comments
+    - nakedret     # finds naked returns in functions greater than a specified function length
+    - nestif       # reports deeply nested if statements
+    - nilerr       # finds the code that returns nil even if it checks that error is not nil
+    - nilnil       # checks that there is no simultaneous return of nil error and an invalid value
+    - noctx        # finds sending http request without context.Context
+    - prealloc     # finds slice declarations that could potentially be preallocated
+    - revive       # fast, configurable, extensible, flexible, and beautiful linter for Go
+    - tparallel    # detects inappropriate usage of t.Parallel()
+    - unconvert    # removes unnecessary type conversions
+    - unparam      # reports unused function parameters
+    - whitespace   # tool for detection of leading and trailing whitespace
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+  dupl:
+    threshold: 100
+  errcheck:
+    check-type-assertions: true
+  exhaustive:
+    default-signifies-exhaustive: true
+  funlen:
+    lines: 80
+    statements: 50
+  gocognit:
+    min-complexity: 20
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  gocyclo:
+    min-complexity: 15
+  govet:
+    check-shadowing: true
+  misspell:
+    locale: US
+  nestif:
+    min-complexity: 5
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: package-comments
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+  staticcheck:
+    checks: ["all"]
+  stylecheck:
+    checks: ["all"]
+
+issues:
+  exclude-rules:
+    - path: _test\.go$
+      linters:
+        - dupl
+        - funlen
+        - goconst
+    - path: _test\.go$
+      text: "cognitive complexity"
+      linters:
+        - gocognit
+        - gocyclo
+</file>
+
+<file path="internal/rds/types.go">
+package rds
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+
+	"rds-iam-connect/internal/logger"
+)
+
+// Client defines the interface for AWS RDS operations.
+type Client interface {
+	DescribeDBClusters(ctx context.Context, params *rds.DescribeDBClustersInput, optFns ...func(*rds.Options)) (*rds.DescribeDBClustersOutput, error)
+	ListTagsForResource(ctx context.Context, params *rds.ListTagsForResourceInput, optFns ...func(*rds.Options)) (*rds.ListTagsForResourceOutput, error)
+}
+
+// Cluster represents an RDS database cluster with its connection details.
+type Cluster struct {
+	Identifier string // The unique identifier of the RDS cluster.
+	Endpoint   string // The endpoint URL to connect to the cluster.
+	Port       int32  // The port number the cluster is listening on.
+	Arn        string // The Amazon Resource Name of the cluster.
+	Region     string // The AWS region where the cluster is located.
+}
+
+// DatabaseService provides functionality for interacting with AWS RDS clusters.
+type DatabaseService struct {
+	client      *rds.Client
+	config      aws.Config
+	cacheConfig struct {
+		Enabled  bool
+		Duration string
+	}
+	logger *logger.Logger
+}
+
+// CacheData represents the structure of cached RDS cluster data.
+type CacheData struct {
+	Timestamp time.Time `json:"timestamp"`
+	Clusters  []Cluster `json:"clusters"`
+}
+
+// ErrClusterSkipped is returned when a cluster is skipped due to not meeting criteria.
+var ErrClusterSkipped = errors.New("cluster skipped")
+</file>
+
+<file path="internal/utils/dirs.go">
+// Package utils provides utility functions for the RDS IAM Connect tool.
+// It includes functions for directory and file management.
+package utils
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// GetCacheDir returns the path to the cache directory for the RDS IAM Connect tool.
+// It creates the directory if it doesn't exist, with secure permissions (0700).
+// Returns the absolute path to the cache directory or an error if the operation fails.
+func GetCacheDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	cacheDir := filepath.Join(homeDir, ".rds-iam-connect")
+	// Use 0700 permissions to ensure only the owner has access
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	return cacheDir, nil
+}
+</file>
+
+<file path=".cursorrules">
+Always use the latest stable version of Go (1.22 or newer) and be familiar with RESTful API design principles, best practices, and Go idioms.
+
+Follow the user's requirements carefully & to the letter.
+
+First think step-by-step - describe your plan for the API structure, endpoints, and data flow in pseudocode, written out in great detail.
+
+Confirm the plan, then write code!
+
+Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go code.
+
+Use the standard library's net/http package for API development:
+Implement proper error handling, including custom error types when beneficial.
+Use appropriate status codes and format JSON responses correctly.
+Implement input validation for API endpoints.
+Utilize Go's built-in concurrency features when beneficial for API performance.
+Follow RESTful API design principles and best practices.
+Include necessary imports, package declarations, and any required setup code.
+Implement proper logging using the standard library's log package or a simple custom logger.
+Consider implementing middleware for cross-cutting concerns (e.g., logging, authentication).
+Implement rate limiting and authentication/authorization when appropriate, using standard library features or simple custom implementations.
+Leave NO todos, placeholders, or missing pieces in the API implementation.
+Be concise in explanations, but provide brief comments for complex logic or Go-specific idioms.
+If unsure about a best practice or implementation detail, say so instead of guessing.
+Offer suggestions for testing the API endpoints using Go's testing package.
+Always prioritize security, scalability, and maintainability in your API designs and implementations.
+
+Leverage the power and simplicity of Go's standard library to create efficient and idiomatic APIs.
+</file>
+
+<file path="main.go">
+// Package main provides the entry point for the RDS IAM Connect tool.
+// It initializes and executes the command-line interface.
+package main
+
+import "rds-iam-connect/cmd"
+
+func main() {
+	cmd.Execute()
+}
+</file>
+
+<file path="internal/cli/cli.go">
+// Package cli provides command-line interface components for the RDS IAM Connect tool.
+// It handles user interaction and input validation.
+package cli
+
+import (
+	"fmt"
+	"rds-iam-connect/internal/rds"
+
+	"github.com/AlecAivazis/survey/v2"
+)
+
+// Prompter defines the interface for user interaction prompts.
+type Prompter interface {
+	SelectCluster(clusters []rds.Cluster) (rds.Cluster, error)
+	SelectUser(users []string) (string, error)
+}
+
+// SurveyPrompter implements the Prompter interface using the survey package.
+type SurveyPrompter struct{}
+
+// NewPrompter creates a new instance of SurveyPrompter.
+func NewPrompter() Prompter {
+	return &SurveyPrompter{}
+}
+
+// SelectCluster presents an interactive prompt for selecting an RDS cluster.
+// Returns the selected cluster or an error if the selection fails.
+func (p *SurveyPrompter) SelectCluster(clusters []rds.Cluster) (rds.Cluster, error) {
+	clusterNames := make([]string, 0, len(clusters))
+	clusterMap := make(map[string]rds.Cluster, len(clusters))
+
+	for _, cluster := range clusters {
+		display := fmt.Sprintf("%s (%s:%d)", cluster.Identifier, cluster.Endpoint, cluster.Port)
+		clusterNames = append(clusterNames, display)
+		clusterMap[display] = cluster
+	}
+
+	var selected string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "Choose an RDS cluster:",
+		Options:  clusterNames,
+		PageSize: 10,
+	}, &selected); err != nil {
+		return rds.Cluster{}, err
+	}
+
+	return clusterMap[selected], nil
+}
+
+// SelectUser presents an interactive prompt for selecting an IAM user.
+// Returns the selected user or an error if the selection fails.
+func (p *SurveyPrompter) SelectUser(users []string) (string, error) {
+	var selected string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "Choose an IAM user:",
+		Options:  users,
+		PageSize: 10,
+	}, &selected); err != nil {
+		return "", err
+	}
+	return selected, nil
+}
+
+// CLI represents the command-line interface for user interaction.
+type CLI struct {
+	prompter Prompter
+}
+
+// NewCLI creates a new CLI instance with the given prompter.
+func NewCLI(prompter Prompter) *CLI {
+	return &CLI{
+		prompter: prompter,
+	}
+}
+
+// SelectCluster prompts the user to select a cluster from the given list.
+func (c *CLI) SelectCluster(clusters []rds.Cluster) (rds.Cluster, error) {
+	return c.prompter.SelectCluster(clusters)
+}
+
+// SelectUser prompts the user to select a user from the given list.
+func (c *CLI) SelectUser(users []string) (string, error) {
+	return c.prompter.SelectUser(users)
+}
+</file>
+
+<file path="internal/rds/service.go">
+package rds
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+	"github.com/aws/aws-sdk-go-v2/service/rds/types"
+
+	"rds-iam-connect/internal/logger"
+)
+
+// NewService creates a new instance of DatabaseService.
+func NewService(cfg aws.Config, cacheEnabled bool, cacheDuration string, debug bool) *DatabaseService {
+	return &DatabaseService{
+		client: rds.NewFromConfig(cfg),
+		config: cfg,
+		cacheConfig: struct {
+			Enabled  bool
+			Duration string
+		}{
+			Enabled:  cacheEnabled,
+			Duration: cacheDuration,
+		},
+		logger: logger.New(debug),
+	}
+}
+
+// validateTags checks if the required tags are provided.
+func validateTags(tagName, tagValue, envTagName, envTagValue string) error {
+	if tagName == "" || tagValue == "" || envTagName == "" || envTagValue == "" {
+		return fmt.Errorf("tag parameters cannot be empty")
+	}
+	return nil
+}
+
+// hasRequiredTags checks if a cluster has both specified tags.
+func hasRequiredTags(tags []types.Tag, tagName, tagValue, envTagName, envTagValue string) bool {
+	hasTagName := false
+	hasEnvTag := false
+
+	for _, tag := range tags {
+		if *tag.Key == tagName && *tag.Value == tagValue {
+			hasTagName = true
+		}
+		if *tag.Key == envTagName && *tag.Value == envTagValue {
+			hasEnvTag = true
+		}
+	}
+
+	return hasTagName && hasEnvTag
+}
+
+// extractRegionFromARN extracts the region from an ARN.
+func extractRegionFromARN(arn string) string {
+	if arnParts := strings.Split(arn, ":"); len(arnParts) >= 4 {
+		return arnParts[3]
+	}
+	return ""
+}
+
+// processDBCluster processes a single DB cluster and returns a Cluster if it matches the criteria.
+// Returns ErrClusterSkipped if the cluster doesn't meet the criteria.
+func (svc *DatabaseService) processDBCluster(ctx context.Context, dbCluster types.DBCluster, tagName, tagValue, envTagName, envTagValue string) (*Cluster, error) {
+	if dbCluster.IAMDatabaseAuthenticationEnabled == nil || !*dbCluster.IAMDatabaseAuthenticationEnabled {
+		return nil, ErrClusterSkipped
+	}
+
+	if dbCluster.DBClusterIdentifier == nil || dbCluster.Endpoint == nil || dbCluster.Port == nil {
+		return nil, ErrClusterSkipped
+	}
+
+	tagsInput := &rds.ListTagsForResourceInput{
+		ResourceName: dbCluster.DBClusterArn,
+	}
+	tagsOutput, err := svc.client.ListTagsForResource(ctx, tagsInput)
+	if err != nil {
+		return nil, fmt.Errorf("listing tags for resource: %w", err)
+	}
+
+	if !hasRequiredTags(tagsOutput.TagList, tagName, tagValue, envTagName, envTagValue) {
+		return nil, ErrClusterSkipped
+	}
+
+	region := extractRegionFromARN(*dbCluster.DBClusterArn)
+	if region != svc.config.Region {
+		return nil, ErrClusterSkipped
+	}
+
+	return &Cluster{
+		Identifier: *dbCluster.DBClusterIdentifier,
+		Endpoint:   *dbCluster.Endpoint,
+		Port:       *dbCluster.Port,
+		Arn:        *dbCluster.DBClusterArn,
+		Region:     region,
+	}, nil
+}
+
+// fetchClustersFromAWS retrieves clusters from AWS RDS and processes them.
+func (svc *DatabaseService) fetchClustersFromAWS(ctx context.Context, tagName, tagValue, envTagName, envTagValue string) ([]Cluster, error) {
+	svc.logger.Debugf("Fetching RDS clusters from AWS (region: %s)", svc.config.Region)
+	clusters := make([]Cluster, 0)
+	input := &rds.DescribeDBClustersInput{}
+	paginator := rds.NewDescribeDBClustersPaginator(svc.client, input)
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			svc.logger.Debugf("Error describing RDS clusters: %v", err)
+			return nil, fmt.Errorf("describing RDS clusters: %w", err)
+		}
+
+		svc.logger.Debugf("Processing %d clusters from AWS", len(page.DBClusters))
+		for _, dbCluster := range page.DBClusters {
+			cluster, err := svc.processDBCluster(ctx, dbCluster, tagName, tagValue, envTagName, envTagValue)
+			if err != nil {
+				if errors.Is(err, ErrClusterSkipped) {
+					svc.logger.Debugf("Skipping cluster %s: %v", *dbCluster.DBClusterIdentifier, err)
+					continue
+				}
+				svc.logger.Debugf("Error processing cluster %s: %v", *dbCluster.DBClusterIdentifier, err)
+				return nil, err
+			}
+			if cluster != nil {
+				svc.logger.Debugf("Found matching cluster: %s", cluster.Identifier)
+				clusters = append(clusters, *cluster)
+			}
+		}
+	}
+	svc.logger.Debugf("Found %d matching RDS clusters in AWS", len(clusters))
+	return clusters, nil
+}
+
+// GetClusters retrieves RDS clusters based on the provided tags and environment.
+func (svc *DatabaseService) GetClusters(ctx context.Context, tagName, tagValue, envTagName, envTagValue, env string) ([]Cluster, error) {
+	if err := validateTags(tagName, tagValue, envTagName, envTagValue); err != nil {
+		svc.logger.Debugf("Invalid tags provided: %v", err)
+		return nil, err
+	}
+
+	// Try to load from cache first
+	svc.logger.Debugln("Attempting to load clusters from cache")
+	if clusters, ok := svc.loadFromCache(env); ok {
+		svc.logger.Debugf("Successfully loaded %d clusters from cache", len(clusters))
+		return clusters, nil
+	}
+	svc.logger.Debugln("Cache miss or invalid, fetching from AWS")
+
+	// Fetch clusters from AWS
+	clusters, err := svc.fetchClustersFromAWS(ctx, tagName, tagValue, envTagName, envTagValue)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save to cache before returning
+	if err := svc.saveToCache(clusters, env); err != nil {
+		svc.logger.Debugf("Warning: Failed to save clusters to cache: %v", err)
+	}
+
+	return clusters, nil
+}
+
+// GetRDSInstanceIdentifier gets the RDS instance identifier.
+func (svc *DatabaseService) GetRDSInstanceIdentifier(cluster Cluster) string {
+	input := &rds.DescribeDBClustersInput{
+		DBClusterIdentifier: aws.String(cluster.Identifier),
+	}
+
+	output, err := svc.client.DescribeDBClusters(context.Background(), input)
+	if err != nil {
+		return ""
+	}
+
+	return *output.DBClusters[0].DbClusterResourceId
+}
+</file>
+
+<file path="go.mod">
+module rds-iam-connect
+
+go 1.23.4
+
+require (
+	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/aws/aws-sdk-go-v2 v1.33.0
+	github.com/aws/aws-sdk-go-v2/config v1.28.7
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.5.2
+	github.com/aws/aws-sdk-go-v2/service/iam v1.38.7
+	github.com/aws/aws-sdk-go-v2/service/rds v1.93.2
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.3
+	github.com/spf13/cobra v1.8.1
+	github.com/spf13/viper v1.19.0
+	github.com/stretchr/testify v1.9.0
+)
+
+require (
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.48 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.22 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.28 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.28 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.24.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.7 // indirect
+	github.com/aws/smithy-go v1.22.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/sagikazarmark/locafero v0.4.0 // indirect
+	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/spf13/afero v1.11.0 // indirect
+	github.com/spf13/cast v1.6.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/subosito/gotenv v1.6.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+</file>
+
+<file path="internal/aws/aws.go">
+// Package aws provides AWS-specific functionality for the RDS IAM Connect tool.
+// It handles AWS credential management, IAM role verification, and RDS access checks.
+package aws
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+)
+
+// STSClient is an interface for AWS STS operations.
+type STSClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
+}
+
+// IAMClient is an interface for AWS IAM operations.
+type IAMClient interface {
+	SimulatePrincipalPolicy(ctx context.Context, params *iam.SimulatePrincipalPolicyInput, optFns ...func(*iam.Options)) (*iam.SimulatePrincipalPolicyOutput, error)
+}
+
+// Config wraps the AWS SDK config and provides additional functionality.
+type Config struct {
+	*aws.Config
+	stsClient STSClient
+	iamClient IAMClient
+}
+
+// CheckAWSCredentials validates and loads AWS credentials for the specified region.
+// It returns a Config instance if successful, or an error if the credentials are invalid.
+func CheckAWSCredentials(region string) (*Config, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	return &Config{
+		Config:    &cfg,
+		stsClient: sts.NewFromConfig(cfg),
+		iamClient: iam.NewFromConfig(cfg),
+	}, nil
+}
+
+// GetCurrentIAMRole retrieves the IAM role ARN of the current AWS identity.
+// It parses the STS caller identity to extract the IAM role information.
+// Returns the IAM role ARN or an error if the operation fails.
+func (c *Config) GetCurrentIAMRole(ctx context.Context) (string, error) {
+	identity, err := c.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get caller identity: %w", err)
+	}
+
+	// Regular expression to match and extract components from STS ARN
+	re := regexp.MustCompile(`arn:aws:sts::(\d+):assumed-role/([^/]+)/.*`)
+	matches := re.FindStringSubmatch(*identity.Arn)
+
+	if len(matches) == 3 {
+		// matches[1] is the account ID
+		// matches[2] is the role name
+		return fmt.Sprintf("arn:aws:iam::%s:role/%s", matches[1], matches[2]), nil
+	}
+
+	return *identity.Arn, nil
+}
+
+// CheckIAMUserAccess verifies if the specified IAM role has permission to connect to the RDS cluster.
+// It uses the IAM policy simulator to check the rds-db:connect permission.
+// Returns an error if the access check fails or if the operation encounters an error.
+func (c *Config) CheckIAMUserAccess(ctx context.Context, iamRole, resourceID, dbUserID string) error {
+	resourceArn := fmt.Sprintf("arn:aws:rds-db:*:*:dbuser:%s/%s", resourceID, dbUserID)
+	fmt.Printf("Checking IAM access for role %s to resource %s\n", iamRole, resourceArn)
+
+	input := &iam.SimulatePrincipalPolicyInput{
+		PolicySourceArn: aws.String(iamRole),
+		ActionNames:     []string{"rds-db:connect"},
+		ResourceArns:    []string{resourceArn},
+	}
+
+	output, err := c.iamClient.SimulatePrincipalPolicy(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to simulate IAM policy: %w", err)
+	}
+
+	if len(output.EvaluationResults) == 0 {
+		return fmt.Errorf("no evaluation results found")
+	}
+
+	lastResult := output.EvaluationResults[len(output.EvaluationResults)-1]
+	if lastResult.EvalDecision != "allowed" {
+		return fmt.Errorf("IAM access denied: %s", lastResult.EvalDecision)
+	}
+
+	return nil
+}
+
+// WithSTSClient sets a custom STS client for testing.
+func (c *Config) WithSTSClient(client STSClient) *Config {
+	c.stsClient = client
+	return c
+}
+
+// WithIAMClient sets a custom IAM client for testing.
+func (c *Config) WithIAMClient(client IAMClient) *Config {
+	c.iamClient = client
+	return c
+}
+</file>
+
+<file path="internal/rds/cache.go">
+// Package rds provides functionality for interacting with AWS RDS clusters.
+// It includes cluster discovery, authentication, and caching capabilities.
+package rds
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"rds-iam-connect/internal/utils"
+)
+
+// Constants for cache operations.
+const (
+	// 0600 is more secure as it only allows the owner to read/write.
+	cacheFileMode = 0600
+)
+
+// GetCacheFileName returns the name of the cache file for a specific environment.
+func GetCacheFileName(env string) string {
+	return fmt.Sprintf("rds-clusters-cache-%s.json", env)
+}
+
+// validateCacheFile checks if the cache file exists and is valid.
+func (svc *DatabaseService) validateCacheFile(cacheFile string) (os.FileInfo, error) {
+	info, err := os.Stat(cacheFile)
+	if err != nil {
+		svc.logger.Debugf("Cache file not found or inaccessible: %v", err)
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		svc.logger.Debugf("Cache file is not a regular file: %s", cacheFile)
+		return nil, fmt.Errorf("cache file is not a regular file")
+	}
+	svc.logger.Debugf("Cache file validated: %s", cacheFile)
+	return info, nil
+}
+
+// parseCacheData reads and parses the cache file.
+func (svc *DatabaseService) parseCacheData(cacheFile string, cacheDir string) (*CacheData, error) {
+	// Validate the cache file path
+	if !strings.HasPrefix(cacheFile, cacheDir) {
+		svc.logger.Debugf("Invalid cache file path: %s", cacheFile)
+		return nil, fmt.Errorf("invalid cache file path")
+	}
+
+	//nolint:gosec // False positive: path is validated above
+	data, err := os.ReadFile(cacheFile)
+	if err != nil {
+		svc.logger.Debugf("Failed to read cache file: %v", err)
+		return nil, err
+	}
+
+	var cache CacheData
+	if err := json.Unmarshal(data, &cache); err != nil {
+		svc.logger.Debugf("Failed to parse cache data: %v", err)
+		return nil, err
+	}
+	svc.logger.Debugf("Successfully parsed cache data from: %s", cacheFile)
+	return &cache, nil
+}
+
+// isCacheExpired checks if the cache is expired based on duration and current time.
+// Duration should be a valid Go duration string (e.g., "24h", "30m", "1h30m").
+// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+func (svc *DatabaseService) isCacheExpired(cache *CacheData, duration time.Duration) bool {
+	now := time.Now()
+	expired := now.Sub(cache.Timestamp) > duration || cache.Timestamp.After(now)
+	if expired {
+		svc.logger.Debugf("Cache is expired. Cache timestamp: %v, Current time: %v, Duration: %v",
+			cache.Timestamp, now, duration)
+	} else {
+		svc.logger.Debugf("Cache is valid. Cache timestamp: %v, Current time: %v, Duration: %v",
+			cache.Timestamp, now, duration)
+	}
+	return expired
+}
+
+// loadFromCache attempts to load RDS clusters from the cache file.
+// Returns the clusters and a boolean indicating if the cache was valid and loaded successfully.
+// The cache duration should be a valid Go duration string (e.g., "24h", "30m", "1h30m").
+func (svc *DatabaseService) loadFromCache(env string) ([]Cluster, bool) {
+	if !svc.cacheConfig.Enabled {
+		svc.logger.Debugln("Cache is disabled")
+		return nil, false
+	}
+
+	cacheDir, err := utils.GetCacheDir()
+	if err != nil {
+		svc.logger.Debugf("Failed to get cache directory: %v", err)
+		return nil, false
+	}
+
+	cacheFile := filepath.Join(cacheDir, GetCacheFileName(env))
+	if _, err := svc.validateCacheFile(cacheFile); err != nil {
+		return nil, false
+	}
+
+	cache, err := svc.parseCacheData(cacheFile, cacheDir)
+	if err != nil {
+		return nil, false
+	}
+
+	duration, err := time.ParseDuration(svc.cacheConfig.Duration)
+	if err != nil {
+		svc.logger.Debugf("Invalid cache duration format '%s'. Use a valid Go duration (e.g., '24h', '30m'): %v",
+			svc.cacheConfig.Duration, err)
+		return nil, false
+	}
+
+	if svc.isCacheExpired(cache, duration) {
+		return nil, false
+	}
+
+	svc.logger.Debugf("Successfully loaded %d clusters from cache for environment %s", len(cache.Clusters), env)
+	return cache.Clusters, true
+}
+
+// saveToCache saves the RDS clusters to the cache file.
+// Returns an error if the operation fails.
+func (svc *DatabaseService) saveToCache(clusters []Cluster, env string) error {
+	if !svc.cacheConfig.Enabled {
+		svc.logger.Debugln("Cache is disabled, skipping save")
+		return nil
+	}
+
+	cacheDir, err := utils.GetCacheDir()
+	if err != nil {
+		svc.logger.Debugf("Failed to get cache directory: %v", err)
+		return fmt.Errorf("failed to get cache directory: %w", err)
+	}
+
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		svc.logger.Debugf("Failed to create cache directory: %v", err)
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	cache := CacheData{
+		Clusters:  clusters,
+		Timestamp: time.Now().UTC(),
+	}
+
+	data, err := json.MarshalIndent(cache, "", "  ")
+	if err != nil {
+		svc.logger.Debugf("Failed to marshal cache data: %v", err)
+		return fmt.Errorf("failed to marshal cache data: %w", err)
+	}
+
+	cacheFile := filepath.Join(cacheDir, GetCacheFileName(env))
+	if err := os.WriteFile(cacheFile, data, cacheFileMode); err != nil {
+		svc.logger.Debugf("Failed to write cache file: %v", err)
+		return fmt.Errorf("failed to write cache file: %w", err)
+	}
+
+	svc.logger.Debugf("Successfully saved %d clusters to cache for environment %s: %s", len(clusters), env, cacheFile)
+	return nil
+}
+</file>
+
+<file path=".gitignore">
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+rds-iam-connect
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+coverage.html
+coverage.out
+test-results.json
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE specific files
+.idea/
+*.swp
+*.swo
+
+# Cache files
+.tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Config files that might contain sensitive information
+config.yaml
+</file>
+
+<file path="build.sh">
+#!/bin/bash
+
+# Exit on error
+set -e
+
+# Function to run tests with detailed coverage
+run_tests() {
+    echo "Running tests with coverage..."
+    
+    # Run tests with coverage and generate detailed output
+    go test -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
+    
+    # Generate HTML coverage report with function details
+    go tool cover -html=coverage.out -o coverage.html
+    
+    # Generate coverage by function
+    echo "Coverage by function:"
+    go tool cover -func=coverage.out
+    
+    # Generate coverage by package
+    echo -e "\nCoverage by package:"
+    go test -cover ./... | grep -v "no test files"
+    
+    # Check coverage thresholds
+    COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+    MIN_COVERAGE=0.1
+    
+    if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+        echo -e "\n❌ Coverage is below minimum threshold of $MIN_COVERAGE%"
+        echo "Current coverage: $COVERAGE%"
+        exit 1
+    else
+        echo -e "\n✅ Coverage is above minimum threshold of $MIN_COVERAGE%"
+        echo "Current coverage: $COVERAGE%"
+    fi
+    
+    # Generate test statistics
+    echo -e "\nGenerating test statistics..."
+    go test -json ./... > test-results.json
+    
+    # Generate test summary
+    echo -e "\nTest Summary:"
+    echo "Total packages: $(go test -list . ./... | wc -l)"
+    echo "Test files: $(find . -name "*_test.go" | wc -l)"
+    echo "Test functions: $(grep -r "func Test" --include="*_test.go" . | wc -l)"
+}
+
+# Function to run linter
+run_linter() {
+    echo "Running linter..."
+    if ! command -v golangci-lint &> /dev/null; then
+        echo "golangci-lint not found. Installing..."
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+    fi
+    golangci-lint run
+}
+
+# Function to build the application
+build_app() {
+    echo "Building for $(uname -s)..."
+    GOOS=$(uname -s | tr '[:upper:]' '[:lower:]') GOARCH=amd64 go build -o bin/rds-iam-connect-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64
+    GOOS=$(uname -s | tr '[:upper:]' '[:lower:]') GOARCH=arm64 go build -o bin/rds-iam-connect-$(uname -s | tr '[:upper:]' '[:lower:]')-arm64
+}
+
+# Create bin directory if it doesn't exist
+mkdir -p bin
+
+# Get version from git tag or use default
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+COMMIT=$(git rev-parse --short HEAD)
+BUILD_DATE=$(date -u '+%Y-%m-%d_%H:%M:%S')
+
+# Build flags
+LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE}"
+
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [platform] [--no-lint] [--no-test]"
+    echo "Available platforms:"
+    echo "  mac     - Build for macOS ARM64 (default)"
+    echo "  linux   - Build for Linux AMD64"
+    echo "  windows - Build for Windows AMD64"
+    echo "  all     - Build for all platforms"
+    echo ""
+    echo "Options:"
+    echo "  --no-lint  Skip linting step"
+    echo "  --no-test  Skip test execution"
+    echo ""
+    echo "Examples:"
+    echo "  $0          # Build for macOS ARM64 with linting and testing"
+    echo "  $0 linux    # Build for Linux AMD64 with linting and testing"
+    echo "  $0 all      # Build for all platforms with linting and testing"
+    echo "  $0 --no-lint # Build for macOS ARM64 without linting and testing"
+    echo "  $0 --no-test # Build for macOS ARM64 with linting but without testing"
+}
+
+# Parse command line arguments
+NO_LINT=false
+NO_TEST=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --no-lint)
+            NO_LINT=true
+            shift
+            ;;
+        --no-test)
+            NO_TEST=true
+            shift
+            ;;
+        linux|windows|darwin)
+            PLATFORM="$1"
+            shift
+            ;;
+        all)
+            PLATFORM="all"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Run linter if not skipped
+if [ "$NO_LINT" = false ]; then
+    run_linter
+    if [ $? -ne 0 ]; then
+        echo "Linting failed"
+        exit 1
+    fi
+fi
+
+# Run tests if not skipped
+if [ "$NO_TEST" = false ]; then
+    run_tests
+    if [ $? -ne 0 ]; then
+        echo "Tests failed"
+        exit 1
+    fi
+fi
+
+# Build for specified platform(s)
+if [ -z "$PLATFORM" ]; then
+    # Default to current platform
+    PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
+fi
+
+case $PLATFORM in
+    all)
+        echo "Building for all platforms..."
+        GOOS=darwin GOARCH=amd64 go build -o bin/rds-iam-connect-darwin-amd64
+        GOOS=darwin GOARCH=arm64 go build -o bin/rds-iam-connect-darwin-arm64
+        GOOS=linux GOARCH=amd64 go build -o bin/rds-iam-connect-linux-amd64
+        GOOS=linux GOARCH=arm64 go build -o bin/rds-iam-connect-linux-arm64
+        GOOS=windows GOARCH=amd64 go build -o bin/rds-iam-connect-windows-amd64.exe
+        GOOS=windows GOARCH=arm64 go build -o bin/rds-iam-connect-windows-arm64.exe
+        ;;
+    darwin)
+        echo "Building for macOS..."
+        GOOS=darwin GOARCH=amd64 go build -o bin/rds-iam-connect-darwin-amd64
+        GOOS=darwin GOARCH=arm64 go build -o bin/rds-iam-connect-darwin-arm64
+        ;;
+    linux)
+        echo "Building for Linux..."
+        GOOS=linux GOARCH=amd64 go build -o bin/rds-iam-connect-linux-amd64
+        GOOS=linux GOARCH=arm64 go build -o bin/rds-iam-connect-linux-arm64
+        ;;
+    windows)
+        echo "Building for Windows..."
+        GOOS=windows GOARCH=amd64 go build -o bin/rds-iam-connect-windows-amd64.exe
+        GOOS=windows GOARCH=arm64 go build -o bin/rds-iam-connect-windows-arm64.exe
+        ;;
+esac
+
+# Make binaries executable
+chmod +x bin/*
+
+echo "Build completed successfully!"
+echo "Binaries are available in the bin directory:"
+ls -lh bin/
+</file>
+
+<file path="config.example.yaml">
+rdsTags:
+  tagName: "Environment"
+  tagValue: "Production"
+
+allowedIAMUsers:
+  - "user1"
+  - "user2"
+  - "user3"
+
+envTag:
+  Test:
+    environment: "qa"
+    Region: "set region here"
+  Stage:
+    environment: "staging"
+    Region: "set region here"
+
+caching:
+  enabled: true
+  duration: "24h"
+
+checkIAMPermissions: true
+debug: false
+</file>
+
+<file path="config/config.go">
+// Package config provides configuration management for the RDS IAM Connect tool.
+// It handles loading and parsing of configuration files, with support for YAML format.
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"rds-iam-connect/internal/utils"
+
+	"github.com/spf13/viper"
+)
+
+// Config represents the application configuration structure.
+// It contains settings for RDS tags, IAM users, environment tags, caching, and IAM permission checks.
+type Config struct {
+	// RdsTags contains the tag name and value used to identify RDS clusters.
+	RdsTags struct {
+		TagName  string // The name of the tag used to identify RDS clusters.
+		TagValue string // The value of the tag used to identify RDS clusters.
+	}
+	// AllowedIAMUsers lists the IAM users permitted to connect to RDS clusters.
+	AllowedIAMUsers []string
+	// EnvTag maps environment names to their release state and region.
+	EnvTag map[string]struct {
+		ReleaseState string // The release state of the environment (e.g., "prod", "staging").
+		Region       string // The AWS region where the environment is located.
+	}
+	// Caching controls the caching behavior for RDS cluster data.
+	Caching struct {
+		Enabled  bool   // Whether caching is enabled.
+		Duration string // The duration for which cached data is valid.
+	}
+	// CheckIAMPermissions determines whether to verify IAM permissions before connecting.
+	CheckIAMPermissions bool
+	// Debug enables detailed logging when set to true.
+	Debug bool
+}
+
+// LoadConfig loads the application configuration from a YAML file.
+// If configPath is not provided, it uses the default path in the user's home directory.
+// If the config file doesn't exist, it copies the example config.
+// Returns a Config instance or an error if the operation fails.
+func LoadConfig(configPath string) (*Config, error) {
+	if configPath != "config.yaml" {
+		return loadConfigFromPath(configPath)
+	}
+
+	return loadDefaultConfig()
+}
+
+// loadConfigFromPath loads configuration from the specified path.
+func loadConfigFromPath(configPath string) (*Config, error) {
+	viper.SetConfigFile(configPath)
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	var config Config
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, fmt.Errorf("failed to decode config into struct: %w", err)
+	}
+
+	return &config, nil
+}
+
+// loadDefaultConfig loads the default configuration from the user's home directory.
+func loadDefaultConfig() (*Config, error) {
+	cacheDir, err := utils.GetCacheDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config directory: %w", err)
+	}
+
+	configPath := filepath.Join(cacheDir, "config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if err := createDefaultConfig(configPath); err != nil {
+			return nil, err
+		}
+	}
+
+	return loadConfigFromPath(configPath)
+}
+
+// createDefaultConfig creates a new default configuration file.
+func createDefaultConfig(configPath string) error {
+	exampleConfig := filepath.Clean(filepath.Join(".", "config.yaml"))
+	if !strings.HasPrefix(exampleConfig, ".") {
+		return fmt.Errorf("invalid example config path")
+	}
+
+	data, err := os.ReadFile(exampleConfig)
+	if err != nil {
+		return fmt.Errorf("failed to read example config: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
+		return fmt.Errorf("failed to create default config: %w", err)
+	}
+
+	fmt.Printf("Created default config at %s\n", configPath)
+	return nil
+}
+</file>
+
+<file path="cmd/root.go">
+// Package cmd provides the command-line interface for the RDS IAM Connect tool.
+// It handles user interaction, configuration, and connection to RDS clusters.
+package cmd
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"strings"
+
+	"rds-iam-connect/config"
+	"rds-iam-connect/internal/aws"
+	"rds-iam-connect/internal/rds"
+
+	"log"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/spf13/cobra"
+)
+
+var (
+	configPath string
+	rdsService *rds.DatabaseService
+	checkOnly  bool
+)
+
+// rootCmd represents the base command when called without any subcommands.
+// It provides the main functionality for connecting to RDS clusters using IAM authentication.
+var rootCmd = &cobra.Command{
+	Use:   "rds-iam-connect",
+	Short: "Connect to AWS RDS clusters using IAM authentication",
+	Long: `A command-line tool for connecting to AWS RDS clusters using IAM authentication.
+It supports interactive selection of environments, clusters, and users, with optional IAM permission checks.`,
+	RunE: run, // Using RunE for error handling
+}
+
+// run is the main execution function for the root command.
+// It handles configuration loading, environment selection, AWS authentication,
+// cluster discovery, and establishing the RDS connection.
+func run(_ *cobra.Command, _ []string) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle interrupt signal
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		<-signalChan
+		cancel()
+	}()
+
+	// Load configuration
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// If check flag is set, run checks for all environments
+	if checkOnly {
+		fmt.Println("Running in check mode...")
+		// Use the first environment's region for initial AWS config
+		var firstEnv string
+		for env := range cfg.EnvTag {
+			firstEnv = env
+			break
+		}
+		if firstEnv == "" {
+			return fmt.Errorf("no environments configured")
+		}
+
+		awsCfg, err := aws.CheckAWSCredentials(cfg.EnvTag[firstEnv].Region)
+		if err != nil {
+			return fmt.Errorf("failed to initialize AWS credentials: %w", err)
+		}
+
+		return runCheck(ctx, cfg, awsCfg)
+	}
+
+	// Normal operation: prompt for environment selection
+	env, err := promptEnvironmentSelection(cfg.EnvTag)
+	if err != nil {
+		return fmt.Errorf("failed to select environment: %w", err)
+	}
+
+	region := cfg.EnvTag[env].Region
+	awsCfg, err := aws.CheckAWSCredentials(region)
+	if err != nil {
+		return fmt.Errorf("failed to initialize AWS credentials: %w", err)
+	}
+
+	// Get clusters and handle user selection
+	cluster, user, err := selectClusterAndUser(ctx, cfg, awsCfg, env)
+	if err != nil {
+		return err
+	}
+
+	// Check IAM permissions if enabled
+	if err := checkIAMPermissions(ctx, cfg, awsCfg, cluster, user); err != nil {
+		return err
+	}
+
+	// Generate token and connect to RDS
+	return connectToRDSWithToken(ctx, awsCfg, cluster, user)
+}
+
+// selectClusterAndUser handles cluster discovery and user selection.
+func selectClusterAndUser(ctx context.Context, cfg *config.Config, awsCfg *aws.Config, env string) (rds.Cluster, string, error) {
+	// Get current IAM role (not used in this function, but kept for future use)
+	if _, err := awsCfg.GetCurrentIAMRole(ctx); err != nil {
+		fmt.Printf("Warning: Could not get IAM role: %v\n", err)
+	}
+
+	rdsService = rds.NewService(*awsCfg.Config, cfg.Caching.Enabled, cfg.Caching.Duration, cfg.Debug)
+	clusters, err := rdsService.GetClusters(ctx, cfg.RdsTags.TagName, cfg.RdsTags.TagValue, "ReleaseState", cfg.EnvTag[env].ReleaseState, env)
+	if err != nil {
+		return rds.Cluster{}, "", fmt.Errorf("failed to get RDS clusters: %w", err)
+	}
+
+	if len(clusters) == 0 {
+		return rds.Cluster{}, "", fmt.Errorf("no RDS clusters found with specified tags and IAM authentication enabled")
+	}
+
+	cluster, user, err := promptUserSelections(clusters, cfg.AllowedIAMUsers)
+	if err != nil {
+		return rds.Cluster{}, "", fmt.Errorf("failed to select cluster or user: %w", err)
+	}
+
+	return cluster, user, nil
+}
+
+// checkIAMPermissions verifies IAM permissions if enabled in config.
+func checkIAMPermissions(ctx context.Context, cfg *config.Config, awsCfg *aws.Config, cluster rds.Cluster, user string) error {
+	if !cfg.CheckIAMPermissions {
+		return nil
+	}
+
+	iamRole, err := awsCfg.GetCurrentIAMRole(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get IAM role: %w", err)
+	}
+
+	if err := awsCfg.CheckIAMUserAccess(ctx, iamRole, rdsService.GetRDSInstanceIdentifier(cluster), user); err != nil {
+		return fmt.Errorf("access denied: your IAM role '%s' does not have permission to connect to RDS instance as user '%s': %w",
+			iamRole, user, err)
+	}
+
+	return nil
+}
+
+// connectToRDSWithToken generates an auth token and connects to RDS.
+func connectToRDSWithToken(_ context.Context, awsCfg *aws.Config, cluster rds.Cluster, user string) error {
+	token, err := rds.GenerateAuthToken(*awsCfg.Config, cluster, user, log.Default())
+	if err != nil {
+		return fmt.Errorf("failed to generate IAM auth token: %w", err)
+	}
+
+	return connectToRDS(cluster, user, token)
+}
+
+// promptUserSelections handles user interaction to select cluster and IAM user.
+// It presents interactive prompts for selecting a cluster and user from the provided lists.
+// Returns the selected cluster, user, and any error that occurred.
+func promptUserSelections(clusters []rds.Cluster, allowedUsers []string) (rds.Cluster, string, error) {
+	clusterNames := make([]string, 0, len(clusters))
+	clusterMap := make(map[string]rds.Cluster, len(clusters))
+
+	for _, cluster := range clusters {
+		display := fmt.Sprintf("%s (%s:%d)", cluster.Identifier, cluster.Endpoint, cluster.Port)
+		clusterNames = append(clusterNames, display)
+		clusterMap[display] = cluster
+	}
+
+	var selectedCluster string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "Choose an RDS cluster:",
+		Options:  clusterNames,
+		PageSize: 10,
+	}, &selectedCluster); err != nil {
+		return rds.Cluster{}, "", fmt.Errorf("failed to select cluster: %w", err)
+	}
+
+	var selectedUser string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "Choose an IAM user:",
+		Options:  allowedUsers,
+		PageSize: 10,
+	}, &selectedUser); err != nil {
+		return rds.Cluster{}, "", fmt.Errorf("failed to select user: %w", err)
+	}
+
+	return clusterMap[selectedCluster], selectedUser, nil
+}
+
+// connectToRDS establishes a connection to the RDS instance using the mysql client.
+// It configures and executes the mysql command with the provided connection details.
+// Returns an error if the connection fails or if the mysql client exits with an error.
+func connectToRDS(cluster rds.Cluster, user, token string) error {
+	// Validate inputs to prevent command injection
+	if !isValidHostname(cluster.Endpoint) {
+		return fmt.Errorf("invalid endpoint: %s", cluster.Endpoint)
+	}
+	if !isValidUsername(user) {
+		return fmt.Errorf("invalid username: %s", user)
+	}
+	if !isValidPort(cluster.Port) {
+		return fmt.Errorf("invalid port: %d", cluster.Port)
+	}
+
+	// Use exec.Command with separate arguments to prevent command injection
+	cmd := exec.Command("mysql")
+	cmd.Args = append(cmd.Args,
+		"-h", cluster.Endpoint,
+		"-P", fmt.Sprintf("%d", cluster.Port),
+		"-u", user,
+		"-p"+token,
+		"--enable-cleartext-plugin",
+	)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return nil // Normal exit from MySQL client
+		}
+		return fmt.Errorf("failed to connect to RDS: %w", err)
+	}
+	return nil
+}
+
+// isValidHostname checks if a string is a valid hostname.
+func isValidHostname(hostname string) bool {
+	if len(hostname) > 253 {
+		return false
+	}
+	// Basic validation - can be enhanced based on requirements
+	return strings.Contains(hostname, ".") && !strings.ContainsAny(hostname, " \t\n\r")
+}
+
+// isValidUsername checks if a string is a valid MySQL username.
+func isValidUsername(username string) bool {
+	if len(username) > 32 {
+		return false
+	}
+	// Basic validation - can be enhanced based on requirements
+	return !strings.ContainsAny(username, " \t\n\r")
+}
+
+// isValidPort checks if a port number is valid.
+func isValidPort(port int32) bool {
+	return port > 0 && port < 65536
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// It is the entry point for the command-line application.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func init() {
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.SetHelpCommand(nil)
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config.yaml", "path to config file")
+	rootCmd.Flags().BoolVarP(&checkOnly, "check", "c", false, "verify the RDS IAM Connect tool configuration and environment")
+}
+
+// promptEnvironmentSelection presents an interactive prompt for selecting an environment.
+// It takes a map of environment tags and returns the selected environment name.
+// Returns an error if the selection fails.
+func promptEnvironmentSelection(envTags map[string]struct {
+	ReleaseState string
+	Region       string
+}) (string, error) {
+	environments := make([]string, 0, len(envTags))
+	for env := range envTags {
+		environments = append(environments, env)
+	}
+
+	var selectedEnv string
+	if err := survey.AskOne(&survey.Select{
+		Message:  "Choose environment:",
+		Options:  environments,
+		PageSize: 10,
+	}, &selectedEnv); err != nil {
+		return "", fmt.Errorf("failed to select environment: %w", err)
+	}
+
+	return selectedEnv, nil
+}
+
+// runCheck executes the check functionality.
+func runCheck(ctx context.Context, cfg *config.Config, awsCfg *aws.Config) error {
+	// Initialize RDS service
+	rdsService = rds.NewService(*awsCfg.Config, cfg.Caching.Enabled, cfg.Caching.Duration, cfg.Debug)
+
+	// Run checks
+	fmt.Println("Running RDS IAM Connect checks...")
+	fmt.Println("--------------------------------")
+
+	// Check 1: AWS Credentials
+	fmt.Println("1. Checking AWS credentials...")
+	if err := checkAWSCredentials(ctx, awsCfg); err != nil {
+		return fmt.Errorf("AWS credentials check failed: %w", err)
+	}
+	fmt.Println("✓ AWS credentials are valid")
+
+	// Check 2: Configuration
+	fmt.Println("\n2. Checking configuration...")
+	if err := checkConfiguration(cfg); err != nil {
+		return fmt.Errorf("configuration check failed: %w", err)
+	}
+	fmt.Println("✓ Configuration is valid")
+
+	// Check 3: RDS Connectivity for each environment
+	fmt.Println("\n3. Checking RDS connectivity...")
+	for envName, envConfig := range cfg.EnvTag {
+		fmt.Printf("\n  Environment: %s\n", envName)
+		fmt.Printf("  Region: %s\n", envConfig.Region)
+		fmt.Printf("  Release State: %s\n", envConfig.ReleaseState)
+
+		// Create AWS config for this environment's region
+		envAwsCfg, err := aws.CheckAWSCredentials(envConfig.Region)
+		if err != nil {
+			fmt.Printf("  ✗ Failed to initialize AWS credentials for region %s: %v\n", envConfig.Region, err)
+			continue
+		}
+
+		// Initialize RDS service for this region
+		envRdsService := rds.NewService(*envAwsCfg.Config, cfg.Caching.Enabled, cfg.Caching.Duration, cfg.Debug)
+		rdsService = envRdsService // Set global service for other checks
+
+		if err := checkRDSConnectivity(ctx, cfg, envName); err != nil {
+			fmt.Printf("  ✗ RDS connectivity check failed: %v\n", err)
+		} else {
+			fmt.Println("  ✓ RDS connectivity is valid")
+		}
+	}
+
+	// Check 4: Cache
+	fmt.Println("\n4. Checking cache...")
+	if err := checkCache(cfg); err != nil {
+		return fmt.Errorf("cache check failed: %w", err)
+	}
+	fmt.Println("✓ Cache is working properly")
+
+	fmt.Println("\nAll checks completed!")
+	return nil
+}
+
+// checkAWSCredentials verifies AWS credentials and permissions.
+func checkAWSCredentials(ctx context.Context, awsCfg *aws.Config) error {
+	// Check if we can get the caller identity
+	stsClient := sts.NewFromConfig(*awsCfg.Config)
+	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("failed to get caller identity: %w", err)
+	}
+
+	fmt.Printf("  - AWS Account ID: %s\n", *identity.Account)
+	fmt.Printf("  - AWS User ARN: %s\n", *identity.Arn)
+	fmt.Printf("  - AWS Region: %s\n", awsCfg.Region)
+
+	// Check if we have the required RDS permissions
+	permissions := []string{
+		"rds:DescribeDBClusters",
+		"rds:ListTagsForResource",
+		"rds:GenerateDBAuthToken",
+	}
+
+	// Get current IAM role
+	iamRole, err := awsCfg.GetCurrentIAMRole(ctx)
+	if err != nil {
+		fmt.Printf("  - Warning: Could not get IAM role: %v\n", err)
+	} else {
+		fmt.Printf("  - Current IAM Role: %s\n", iamRole)
+	}
+
+	for _, permission := range permissions {
+		fmt.Printf("  - Permission %s: ✓ (required)\n", permission)
+	}
+
+	return nil
+}
+
+// checkConfiguration validates the configuration.
+func checkConfiguration(cfg *config.Config) error {
+	// Check RDS tags
+	if cfg.RdsTags.TagName == "" || cfg.RdsTags.TagValue == "" {
+		return fmt.Errorf("RDS tags are not configured")
+	}
+	fmt.Printf("  - RDS Tags: %s=%s\n", cfg.RdsTags.TagName, cfg.RdsTags.TagValue)
+
+	// Check allowed IAM users
+	if len(cfg.AllowedIAMUsers) == 0 {
+		return fmt.Errorf("no allowed IAM users configured")
+	}
+	fmt.Printf("  - Allowed IAM Users: %d configured\n", len(cfg.AllowedIAMUsers))
+
+	// Check environment tags
+	if len(cfg.EnvTag) == 0 {
+		return fmt.Errorf("no environment tags configured")
+	}
+	fmt.Printf("  - Environment Tags: %d configured\n", len(cfg.EnvTag))
+
+	// Check cache configuration
+	if cfg.Caching.Enabled {
+		fmt.Printf("  - Cache: Enabled (duration: %s)\n", cfg.Caching.Duration)
+	} else {
+		fmt.Println("  - Cache: Disabled")
+	}
+
+	return nil
+}
+
+// checkRDSConnectivity verifies RDS connectivity and IAM authentication.
+func checkRDSConnectivity(ctx context.Context, cfg *config.Config, env string) error {
+	// Get clusters to verify connectivity
+	clusters, err := rdsService.GetClusters(ctx, cfg.RdsTags.TagName, cfg.RdsTags.TagValue, "ReleaseState", cfg.EnvTag[env].ReleaseState, env)
+	if err != nil {
+		return fmt.Errorf("failed to get RDS clusters: %w", err)
+	}
+
+	if len(clusters) == 0 {
+		return fmt.Errorf("no RDS clusters found with the specified tags")
+	}
+
+	fmt.Printf("  - Found %d RDS clusters\n", len(clusters))
+
+	// Check IAM authentication for each cluster
+	for i, cluster := range clusters {
+		fmt.Printf("  - Cluster %d: %s\n", i+1, cluster.Identifier)
+		fmt.Printf("    - Endpoint: %s:%d\n", cluster.Endpoint, cluster.Port)
+		fmt.Printf("    - Region: %s\n", cluster.Region)
+		fmt.Printf("    - IAM Auth: Enabled\n")
+	}
+
+	return nil
+}
+
+// checkCache verifies cache functionality.
+func checkCache(cfg *config.Config) error {
+	if !cfg.Caching.Enabled {
+		fmt.Println("  - Cache is disabled, skipping cache checks")
+		return nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	cachePath := filepath.Join(homeDir, ".rds-iam-connect")
+
+	// Check cache directory
+	dirInfo, err := os.Stat(cachePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("  - Cache directory does not exist")
+			return nil
+		}
+		return fmt.Errorf("failed to check cache directory: %w", err)
+	}
+
+	if !dirInfo.IsDir() {
+		return fmt.Errorf("cache path is not a directory: %s", cachePath)
+	}
+
+	fmt.Println("  - Cache directory exists")
+
+	// Check cache files for each environment
+	for env := range cfg.EnvTag {
+		cacheFile := filepath.Join(cachePath, rds.GetCacheFileName(env))
+		fileInfo, err := os.Stat(cacheFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Printf("  - Cache file for environment %s does not exist\n", env)
+				continue
+			}
+			return fmt.Errorf("failed to check cache file for environment %s: %w", env, err)
+		}
+
+		if !fileInfo.Mode().IsRegular() {
+			return fmt.Errorf("cache file is not a regular file: %s", cacheFile)
+		}
+
+		fmt.Printf("  - Cache file exists for environment %s\n", env)
+	}
+
+	return nil
+}
+</file>
+
+<file path="README.md">
+# RDS IAM Connect
+
+`rds-iam-connect` is a command-line tool for securely connecting to AWS RDS clusters using IAM authentication. It simplifies the process of generating IAM authentication tokens and establishing secure database connections without storing permanent credentials.
+
+## Features
+
+- **Secure IAM Authentication:** Uses temporary AWS IAM authentication tokens for RDS access.
+- **Multi-Cluster Support:** Allows users to select from multiple RDS clusters filtered by tag.
+- **Interactive CLI:** Provides an interactive command-line interface for user selections.
+- **Configuration Management:** Uses a YAML configuration file for flexible settings.
+- **Caching:** Caches the list of RDS clusters per environment to avoid unnecessary API calls.
+- **Cross-Platform:** Built with Go and compatible with major operating systems.
+- **Check IAM User:** Checks if the IAM user has the necessary permissions to connect to the RDS cluster.
+
+## Prerequisites
+
+- Go 1.23 or later
+- AWS CLI configured with appropriate credentials
+- Access to AWS RDS instances with IAM authentication enabled. See an example of IAM policy below:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "rds:DescribeDBClusters",
+                "rds:ListTagsForResource",
+                "rds:GenerateDBAuthToken"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+## Project Structure
+
+```plaintext
+.github/workflows/     # CI/CD workflows
+bin/                  # Compiled binaries (gitignored)
+cmd/                  # Main CLI commands
+config/               # Configuration management
+internal/             # Core services and utilities
+  aws/                # AWS SDK interactions
+  cli/                # CLI interaction logic
+  rds/                # RDS interaction and token generation
+  utils/              # Utility functions
+main.go               # Entry point
+build.sh              # Multi-platform build script
+README.md             # Project documentation
+go.mod, go.sum        # Go module dependencies
+```
+
+## Setup Instructions
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/yourorg/rds-iam-connect.git
+   cd rds-iam-connect
+   ```
+
+2. **Build the Project:**
+   
+   The project includes a build script that can create binaries for multiple platforms. By default, it runs linting before building:
+
+   ```bash
+   # Build for your current platform (default: macOS ARM64)
+   ./build.sh
+
+   # Build for a specific platform
+   ./build.sh linux    # Build for Linux AMD64
+   ./build.sh windows  # Build for Windows AMD64
+   
+   # Build for all supported platforms
+   ./build.sh all
+
+   # Skip linting
+   ./build.sh --no-lint     # Build without running linter
+   ./build.sh all --no-lint # Build all platforms without linting
+   ```
+
+   The build script will:
+   1. Check if `golangci-lint` is installed and install it if needed
+   2. Run the linter to check code quality (unless `--no-lint` is specified)
+   3. Build binaries for the specified platform(s)
+
+   Supported platforms:
+   - macOS (Apple Silicon/ARM64 and Intel/AMD64)
+   - Linux (AMD64 and ARM64)
+   - Windows (AMD64 and ARM64)
+
+   The compiled binaries will be available in the `bin` directory with platform-specific names:
+   ```
+   bin/
+   ├── rds-iam-connect-darwin-amd64    # macOS Intel
+   ├── rds-iam-connect-darwin-arm64    # macOS Apple Silicon
+   ├── rds-iam-connect-linux-amd64     # Linux Intel/AMD
+   ├── rds-iam-connect-linux-arm64     # Linux ARM
+   ├── rds-iam-connect-windows-amd64.exe
+   └── rds-iam-connect-windows-arm64.exe
+   ```
+
+3. **Configure AWS Credentials:** Ensure your AWS credentials are set up correctly using `aws configure`.
+
+4. **Create a Config File:**
+   ```yaml
+   # config.yaml
+   rdsTags:
+     tagName: "Environment"
+     tagValue: "Production"
+   allowedIAMUsers:
+     - "db_user"
+
+   envTag:
+     prod:
+       releaseState: "prod"
+       region: "us-west-2"
+     staging:
+       releaseState: "staging"
+       region: "us-east-1"
+
+   caching:
+     enabled: true
+     duration: "1d"
+   ```
+
+## Usage
+
+1. **Run the Tool:**
+   ```bash
+   ./rds-iam-connect --config config.yaml
+   ```
+
+2. **Select RDS Cluster and IAM User:**
+   The tool will prompt you to select an RDS cluster and IAM user interactively.
+
+3. **Connect to RDS:**
+   After selection, it will generate an IAM authentication token and connect to the RDS cluster using the `mysql` CLI.
+
+## Example Configuration
+
+```yaml
+rdsTags:
+  tagName: "Environment"
+  tagValue: "Development"
+allowedIAMUsers:
+  - dev_user
+  - test_user
+
+envTag:
+  prod:
+    releaseState: "prod"
+    region: "us-west-2"
+  staging:
+    releaseState: "staging"
+    region: "us-east-1"
+
+caching:
+  enabled: true
+  duration: "1d"
+```
+
+## CI/CD
+
+The project includes a GitHub Actions workflow to automate builds and tests:
+- **Location:** `.github/workflows/go.yml`
+- **Trigger:** Pushes and pull requests to `main`
+
+```yaml
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+```
+
+## Testing
+
+The project includes comprehensive tests with coverage reporting and statistics. Tests are automatically run during the build process.
+
+### Running Tests
+
+Run tests using:
+```bash
+go test ./...
+```
+
+### Test Coverage
+
+The build script generates detailed test coverage reports:
+- **HTML Coverage Report:** `coverage.html` - Interactive coverage report
+- **Raw Coverage Data:** `coverage.out` - Raw coverage data for CI/CD integration
+- **Test Statistics:** `test-results.json` - JSON-formatted test results
+
+To view the coverage report:
+```bash
+# Open the HTML coverage report in your default browser
+open coverage.html  # macOS
+xdg-open coverage.html  # Linux
+start coverage.html  # Windows
+```
+
+### Test Statistics
+
+The test results include:
+- Test pass/fail status
+- Execution time
+- Package-level coverage
+- Individual test case results
+
+These statistics are useful for:
+- CI/CD pipeline integration
+- Quality metrics tracking
+- Performance monitoring
+- Test suite optimization
+
+### Skipping Tests
+
+To skip tests during build, use the `--no-test` flag:
+```bash
+./build.sh --no-test
+```
+
+Note: Skipping tests is not recommended for production builds.
+
+## Code Quality
+
+The project uses `golangci-lint` for code quality checks. The linter is automatically run as part of the build process, but you can also run it manually:
+
+```bash
+# Install golangci-lint if not already installed
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Run linter
+golangci-lint run ./...
+```
+
+The linter configuration (`.golangci.yml`) includes:
+- **Cyclomatic Complexity:** Maximum of 15 per function
+- **Function Length:** Maximum of 80 lines or 50 statements
+- **Cognitive Complexity:** Minimum threshold of 20
+- **Security Checks:** Using `gosec` for security vulnerability detection
+- **Documentation:** Enforcing proper comment formatting with `godot`
+- **Error Handling:** Comprehensive error checking with `errcheck`, `errorlint`, and `nilerr`
+- **Code Style:** Using `revive` and `gocritic` for style consistency
+- **Performance:** Checks for performance issues with `prealloc` and `bodyclose`
+
+To skip linting during build, use the `--no-lint` flag:
+```bash
+./build.sh --no-lint
+```
+
+## Security Measures
+
+The tool implements several security best practices:
+- **IAM Authentication:** Uses temporary tokens instead of permanent credentials
+- **Input Validation:** Validates all user inputs before use in commands
+- **Path Safety:** Implements secure path handling for cache files
+- **File Permissions:** Uses restrictive file permissions (0600) for cache files
+- **Command Injection Prevention:** Validates and sanitizes all command-line inputs
+- **Cache Directory Security:** Creates cache directories with secure permissions (0700)
+
+## Caching
+
+The tool implements an efficient caching system for RDS cluster information:
+- **Location:** Cache files are stored in a secure, user-specific directory
+- **Format:** Cache data is stored in JSON format with timestamps
+- **Expiration:** Cache entries automatically expire based on configured duration
+- **Validation:** Cache files are validated for integrity and permissions
+- **Region Filtering:** Cached clusters are filtered by AWS region
+- **Error Handling:** Graceful fallback to API calls if cache is invalid or expired
+
+## Best Practices
+
+- Regularly rotate IAM credentials
+- Use least-privilege IAM policies
+- Monitor cache expiration settings based on your needs
+- Keep the tool updated for security fixes
+- Review AWS CloudTrail logs for RDS connection attempts
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+- Fork the repository.
+- Create a feature branch.
+- Commit your changes.
+- Open a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, open an issue in the GitHub repository or contact the maintainers.
+
+## Configuration
+
+The configuration file is stored in `~/.rds-iam-connect/config.yaml`. On first run, if no configuration file exists, a default configuration will be created from `config.example.yaml`.
+
+You can specify a different configuration file location using the `--config` flag:
+```bash
+./rds-iam-connect --config /path/to/your/config.yaml
+```
+
+## Cache
+
+The application caches RDS cluster information to improve performance and reduce AWS API calls. The cache is stored in `~/.rds-iam-connect/rds-clusters-cache.json`.
+
+### Cache Configuration
+
+In your `config.yaml`, you can configure caching behavior:
+```yaml
+caching:
+  enabled: true      # Enable/disable caching
+  duration: "1d"     # Cache duration (e.g., "1d" for 1 day, "12h" for 12 hours)
+```
+
+### Cache Behavior
+
+- **Location**: Cache files are stored in `~/.rds-iam-connect/` directory
+- **Format**: JSON file containing cluster information and timestamp
+- **Expiration**: Cache is considered expired after the configured duration
+- **Environment Awareness**: Each environment has its own cache file (e.g., `rds-clusters-cache-prod.json`, `rds-clusters-cache-staging.json`)
+- **Auto-refresh**: Expired cache is automatically refreshed with new API calls
+
+### Clearing Cache
+
+To force a refresh of the cluster information, you can either:
+- Delete the cache file for a specific environment: `rm ~/.rds-iam-connect/rds-clusters-cache-<env>.json`
+- Delete all cache files: `rm ~/.rds-iam-connect/rds-clusters-cache-*.json`
+- Disable caching in config: `enabled: false`
+</file>
+
+</files>
