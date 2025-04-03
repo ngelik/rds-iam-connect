@@ -159,7 +159,19 @@ This will:
 3. Check RDS connectivity for each environment
 4. Verify cache functionality
 
-## Configuration Options
+## Configuration
+
+The configuration file is stored in `~/.rds-iam-connect/config.yaml` by default. On first run, if no configuration file exists, a default configuration will be created from `config.example.yaml`.
+
+You can specify a different configuration file location using the `--config` flag:
+```bash
+./rds-iam-connect --config /path/to/your/config.yaml
+```
+
+The default configuration file location is determined as follows:
+1. If no `--config` flag is provided, the tool will look for `config.yaml` in the current directory
+2. If `config.yaml` is not found in the current directory, it will use `~/.rds-iam-connect/config.yaml`
+3. If neither file exists, it will create a new configuration file at `~/.rds-iam-connect/config.yaml` using the example configuration
 
 The configuration file (`config.yaml`) supports the following options:
 
@@ -194,19 +206,6 @@ checkIAMPermissions: true  # Verify IAM permissions before connecting
 # Debug mode
 debug: false              # Enable detailed logging
 ```
-
-## Security Features
-
-The tool implements several security best practices:
-
-- **IAM Authentication:** Uses temporary tokens instead of permanent credentials
-- **Input Validation:** Validates all user inputs before use in commands
-- **Path Safety:** Implements secure path handling for cache files
-- **File Permissions:** Uses restrictive file permissions (0600) for cache files
-- **Command Injection Prevention:** Validates and sanitizes all command-line inputs
-- **Cache Directory Security:** Creates cache directories with secure permissions (0700)
-- **IAM Permission Checks:** Verifies IAM permissions before attempting connections
-- **Environment Isolation:** Maintains separate configurations for different environments
 
 ## Caching
 
@@ -276,45 +275,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Support
 
 For support, open an issue in the GitHub repository or contact the maintainers.
-
-## Configuration
-
-The configuration file is stored in `~/.rds-iam-connect/config.yaml` by default. On first run, if no configuration file exists, a default configuration will be created from `config.example.yaml`.
-
-You can specify a different configuration file location using the `--config` flag:
-```bash
-./rds-iam-connect --config /path/to/your/config.yaml
-```
-
-The default configuration file location is determined as follows:
-1. If no `--config` flag is provided, the tool will look for `config.yaml` in the current directory
-2. If `config.yaml` is not found in the current directory, it will use `~/.rds-iam-connect/config.yaml`
-3. If neither file exists, it will create a new configuration file at `~/.rds-iam-connect/config.yaml` using the example configuration
-
-## Cache
-
-The application caches RDS cluster information to improve performance and reduce AWS API calls. The cache is stored in `~/.rds-iam-connect/rds-clusters-cache.json`.
-
-### Cache Configuration
-
-In your `config.yaml`, you can configure caching behavior:
-```yaml
-caching:
-  enabled: true      # Enable/disable caching
-  duration: "1d"     # Cache duration (e.g., "1d" for 1 day, "12h" for 12 hours)
-```
-
-### Cache Behavior
-
-- **Location**: Cache files are stored in `~/.rds-iam-connect/` directory
-- **Format**: JSON file containing cluster information and timestamp
-- **Expiration**: Cache is considered expired after the configured duration
-- **Environment Awareness**: Each environment has its own cache file (e.g., `rds-clusters-cache-prod.json`, `rds-clusters-cache-staging.json`)
-- **Auto-refresh**: Expired cache is automatically refreshed with new API calls
-
-### Clearing Cache
-
-To force a refresh of the cluster information, you can either:
-- Delete the cache file for a specific environment: `rm ~/.rds-iam-connect/rds-clusters-cache-<env>.json`
-- Delete all cache files: `rm ~/.rds-iam-connect/rds-clusters-cache-*.json`
-- Disable caching in config: `enabled: false`
