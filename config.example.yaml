@@ -1,0 +1,23 @@
+rdsTags:
+  tagName: "Environment"
+  tagValue: "Production"
+
+allowedIAMUsers:
+  - "user1"
+  - "user2"
+  - "user3"
+
+envTag:
+  Test:
+    environment: "qa"
+    Region: "set region here"
+  Stage:
+    environment: "staging"
+    Region: "set region here"
+
+caching:
+  enabled: true
+  duration: "24h"
+
+checkIAMPermissions: true
+debug: false

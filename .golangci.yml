@@ -1,0 +1,105 @@
+version: 2
+
+run:
+  go: '1.22'
+  timeout: 5m
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # checking for unchecked errors
+    - govet        # reports suspicious constructs
+    - ineffassign  # detects when assignments to existing variables are not used
+    - staticcheck  # comprehensive checks
+    - unused       # checks for unused constants, variables, functions and types
+    
+    # Additional linters
+    - bodyclose    # checks whether HTTP response body is closed successfully
+    - cyclop       # checks function and package cyclomatic complexity
+    - dupl         # code clone detection
+    - errname      # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    - errorlint    # finds code that will cause problems with the error wrapping scheme
+    - exhaustive   # checks exhaustiveness of enum switch statements
+    - funlen       # tool for detection of long functions
+    - gocognit     # computes and checks the cognitive complexity of functions
+    - goconst      # finds repeated strings that could be replaced by a constant
+    - gocritic     # provides diagnostics that check for bugs, performance and style issues
+    - gocyclo      # computes and checks the cyclomatic complexity of functions
+    - godot        # checks if comments end in a period
+    - gosec        # inspects source code for security problems
+    - misspell     # finds commonly misspelled English words in comments
+    - nakedret     # finds naked returns in functions greater than a specified function length
+    - nestif       # reports deeply nested if statements
+    - nilerr       # finds the code that returns nil even if it checks that error is not nil
+    - nilnil       # checks that there is no simultaneous return of nil error and an invalid value
+    - noctx        # finds sending http request without context.Context
+    - prealloc     # finds slice declarations that could potentially be preallocated
+    - revive       # fast, configurable, extensible, flexible, and beautiful linter for Go
+    - tparallel    # detects inappropriate usage of t.Parallel()
+    - unconvert    # removes unnecessary type conversions
+    - unparam      # reports unused function parameters
+    - whitespace   # tool for detection of leading and trailing whitespace
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+  dupl:
+    threshold: 100
+  errcheck:
+    check-type-assertions: true
+  exhaustive:
+    default-signifies-exhaustive: true
+  funlen:
+    lines: 80
+    statements: 50
+  gocognit:
+    min-complexity: 20
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  gocyclo:
+    min-complexity: 15
+  govet:
+    check-shadowing: true
+  misspell:
+    locale: US
+  nestif:
+    min-complexity: 5
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: package-comments
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+  staticcheck:
+    checks: ["all"]
+  stylecheck:
+    checks: ["all"]
+
+issues:
+  exclude-rules:
+    - path: _test\.go$
+      linters:
+        - dupl
+        - funlen
+        - goconst
+    - path: _test\.go$
+      text: "cognitive complexity"
+      linters:
+        - gocognit
+        - gocyclo 
